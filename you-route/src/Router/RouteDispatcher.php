@@ -1,99 +1,93 @@
 <?php
 
+declare(strict_types=1);
+
 namespace YouRoute\Router;
 
-use Exception;
-use YouRoute\Http\Response;
+use YouRoute\Attribute\Route;
 
+/**
+ * Classe RouteDispatcher
+ *
+ * Responsable de la distribution des requêtes HTTP vers les routes appropriées.
+ *
+ * Cette classe fournit les fonctionnalités suivantes :
+ * - Correspondance d'URL (`match`) : Vérifie si une URL correspond à une route et extrait les paramètres.
+ * - Exécution (`dispatch`) : Lance l'action associée à la route (Contrôleur ou Closure).
+ *
+ * Elle prend en charge les paramètres dynamiques dans les URL (ex: `/users/{id}`).
+ */
 readonly class RouteDispatcher
 {
+    /**
+     * @param RouteCollection $routeCollection Collection contenant toutes les routes enregistrées.
+     */
     public function __construct(private RouteCollection $routeCollection)
     {
     }
 
     /**
-     * @throws Exception
+     * Tente de faire correspondre une URL et une méthode à une route enregistrée.
+     *
+     * Retourne un tableau contenant la route et les paramètres dynamiques si une correspondance est trouvée,
+     * sinon retourne null.
+     *
+     * @param string $method Méthode HTTP (GET, POST, etc.)
+     * @param string $url    URL à tester
+     * @return array{route: Route, params: array}|null Retourne ['route' => Route, 'params' => array] ou null.
      */
-    public function dispatch(string $method, string $url): void
+    public function dispatch(string $method, string $url): ?array
     {
-        // get routes by method of request
+        // Récupère les routes pour la méthode donnée
         $routes = $this->routeCollection->all()[$method] ?? [];
 
-        // add slash to end of url
-        $url = !str_ends_with($url, "/") ? $url . "/" : $url;
-
         foreach ($routes as $route) {
-            // match path
-            $params = $this->matchPath($route->getPath(), $url);
+            // Vérifie la correspondance du chemin
+            $params = $this->matchPath($route->getPath(), trim($url, '/'));
 
-            // execute action
+            // Si params est un tableau, c'est que ça matche
             if (is_array($params)) {
-                $this->dispatchAction($route->getAction(), $params);
-                return;
+                return [
+                    'route' => $route,
+                    'params' => $params
+                ];
             }
         }
 
-        // not found route
-        new Response("<h1 style='text-align: center; margin-top: 20px; font-size: 50px; color: red'>404 Not Found</h1>",404)->send();
+        return null;
     }
 
     /**
-     * Compare un motif d’URL à une URL réelle et extrait les paramètres de route.
+     * Compare un motif de route à une URL réelle et extrait les paramètres.
      *
-     * Cette méthode compare un motif de route (par exemple, '/users/{id}/posts/{postId}')
-     * contre une URL réelle (par exemple, '/users/123/posts/456') et extrait les paramètres dynamiques si le motif correspond.
-     *
-     * @param string $pattern Motif de route
-     * @param string $url URL réelle
-     * @return bool|array
+     * @param string $pattern Motif de la route (ex: '/users/{id}')
+     * @param string $url     URL réelle (ex: '/users/42/')
+     * @return bool|array     Retourne les paramètres extraits (array) si correspondance, sinon false.
      */
     private function matchPath(string $pattern, string $url): bool|array
     {
         $patternSegments = explode('/', $pattern);
         $urlSegments = explode('/', $url);
 
-        //  check count segments
+        // Vérifie le nombre de segments
         if (count($patternSegments) !== count($urlSegments)) {
             return false;
         }
 
-        // Store parameters
         $params = [];
 
-        // Compare each segment
+        // Compare chaque segment
         foreach ($patternSegments as $index => $patternSegment) {
-            // Check if this segment is a parameter (e.g., {id})
+            // Vérifie si le segment est un paramètre dynamique (ex: {id})
             if (preg_match('/^\{(\w+)\}$/', $patternSegment, $match)) {
-                // Extract parameter name and value
+                // Extrait le nom du paramètre et sa valeur
                 $params[$match[1]] = $urlSegments[$index];
             } elseif ($patternSegment !== $urlSegments[$index]) {
+                // Correspondance exacte échouée pour ce segment
                 return false;
             }
         }
 
         return $params;
-    }
-
-    /**
-     * Execute action
-     *
-     * @param callable|array $action
-     * @param array $params
-     * @return void
-     */
-    private function dispatchAction(callable|array $action, array $params): void
-    {
-        // check callable
-        if (is_callable($action)) {
-            call_user_func_array($action, $params); // call function
-            return;
-        }
-
-        // check array
-        if (is_array($action)) {
-            [$className, $methodName] = $action; // get class and method
-            $instance = new $className(); // create instance
-            call_user_func_array([$instance, $methodName], $params); // call method
-        }
     }
 }

@@ -1,62 +1,62 @@
 <?php
 
+declare(strict_types=1);
+
 namespace YouRoute\Attribute;
 
-#[\Attribute]
+use Attribute;
+use InvalidArgumentException;
+
+/**
+ * Attribut permettant de définir une route directement sur une méthode de contrôleur ou une classe.
+ */
+#[Attribute(Attribute::TARGET_METHOD | Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
 final class Route
 {
     /**
-     * @var string $path le chemin de la route
+     * Liste des méthodes HTTP supportées.
+     */
+    private const array VALID_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
+
+    /**
+     * @var string Le chemin (URI) de la route.
      */
     private string $path;
 
     /**
-     * @var string $name le nom de la route
+     * @var string Le nom unique de la route.
      */
     private string $name;
 
     /**
-     * @var string|array $methods les méthodes de la route
+     * @var array<string> Les méthodes HTTP autorisées pour cette route.
      */
-    private string|array $methods;
+    private array $methods;
 
     /**
-     * @var array $action l'action de la route (le controller avec la méthode)
+     * @var array L'action à exécuter (généralement [Controller::class, 'method']).
      */
-    private array $action;
+    private array $action = [];
 
     /**
-     * @param string $name le nom de la route
-     * @param string $path le chemin de la route
-     * @param string|array $methods les méthodes de la route
+     * Constructeur de l'attribut Route.
+     *
+     * @param string          $path    Le chemin de l'URL (ex: "/produits").
+     * @param string          $name    Le nom de la route (optionnel).
+     * @param string|string[] $methods La ou les méthodes HTTP acceptées (défaut: "GET").
+     *
+     * @throws InvalidArgumentException Si une méthode HTTP fournie n'est pas valide.
      */
-    public function __construct(string $path, string $name = "", string|array $methods = "GET")
+    public function __construct(string $path, string $name = '', string|array $methods = 'GET')
     {
-        // Normaliser le chemin
-        $this->path = rtrim($path, '/');
-        if ($this->path === '') {
-            $this->path = '/';
-        }
-
+        $this->setPath($path);
         $this->name = $name;
-
-        // Transformer en tableau si string
-        $methods = is_string($methods) ? [$methods] : $methods;
-
-        // Valider les méthodes HTTP
-        $validHttpMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
-
-        foreach ($methods as $method) {
-            if (!in_array(strtoupper($method), $validHttpMethods, true)) {
-                throw new \InvalidArgumentException("Invalid HTTP method: {$method}");
-            }
-        }
-
-        $this->methods = array_map('strtoupper', array_unique($methods));
+        $this->setMethods($methods);
     }
 
-
     /**
+     * Récupère le nom de la route.
+     *
      * @return string
      */
     public function getName(): string
@@ -65,14 +65,30 @@ final class Route
     }
 
     /**
+     * Définit le chemin de la route avec normalisation.
+     * Assure qu'il commence par "/" et ne finit pas par "/" (sauf si racine).
+     *
      * @param string $path
+     * @return void
      */
     public function setPath(string $path): void
     {
-        $this->path = !str_ends_with($path,"/") ? $path."/" : $path;
+        // Supprime les espaces et les slashs de début/fin pour normaliser
+        $path = trim($path);
+
+        // Si le chemin est vide ou juste "/", on garde "/"
+        if ($path === '' || $path === '/') {
+            $this->path = '/';
+            return;
+        }
+
+        // Assure le slash au début et supprime celui de la fin
+        $this->path = '/' . trim($path, '/');
     }
 
     /**
+     * Récupère le chemin de la route.
+     *
      * @return string
      */
     public function getPath(): string
@@ -81,14 +97,42 @@ final class Route
     }
 
     /**
-     * @return array|string
+     * Définit et valide les méthodes HTTP.
+     *
+     * @param string|array $methods
+     * @return void
+     * @throws InvalidArgumentException
      */
-    public function getMethods(): array|string
+    private function setMethods(string|array $methods): void
+    {
+        $methodsArray = is_string($methods) ? [$methods] : $methods;
+        $normalizedMethods = [];
+
+        foreach ($methodsArray as $method) {
+            $upperMethod = strtoupper($method);
+            if (!in_array($upperMethod, self::VALID_METHODS, true)) {
+                throw new InvalidArgumentException(sprintf('Invalid HTTP method: "%s". Allowed: %s', $method, implode(', ', self::VALID_METHODS)));
+            }
+            $normalizedMethods[] = $upperMethod;
+        }
+
+        // Élimine les doublons et réindexe
+        $this->methods = array_values(array_unique($normalizedMethods));
+    }
+
+    /**
+     * Récupère les méthodes HTTP autorisées.
+     *
+     * @return array<string>
+     */
+    public function getMethods(): array
     {
         return $this->methods;
     }
 
     /**
+     * Récupère l'action associée.
+     *
      * @return array
      */
     public function getAction(): array
@@ -97,7 +141,10 @@ final class Route
     }
 
     /**
+     * Définit l'action associée (Contrôleur et méthode).
+     *
      * @param array $action
+     * @return void
      */
     public function setAction(array $action): void
     {
