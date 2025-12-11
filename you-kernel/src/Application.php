@@ -102,6 +102,7 @@ class Application
         // Enregistrement des services cœurs
         $this->container->set(YouRouteKernal::class, $router);
         $this->container->set(Container::class, $this->container);
+        $this->container->set('project_dir', $this->projectDir);
 
         // Initialisation du résolveur avec le conteneur
         $resolver = new ControllerResolver($this->container);

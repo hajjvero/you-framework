@@ -69,10 +69,13 @@ class RouteCollection
      *
      * Si une classe de contrôleur possède un attribut Route avec un chemin (ex: "/api"),
      * ce chemin est préfixé au chemin de la méthode.
+     * 
+     * De même, si la classe possède un nom de route (ex: "api"), ce nom est préfixé
+     * au nom de la méthode avec un point comme séparateur (ex: "api.users").
      *
      * @param Route|null $routeClass L'attribut Route de la classe (peut être null).
      * @param Route $routeMethod L'attribut Route de la méthode.
-     * @return Route La route de la méthode mise à jour avec le chemin complet.
+     * @return Route La route de la méthode mise à jour avec le chemin et le nom complets.
      */
     public function prefix(?Route $routeClass, Route $routeMethod): Route
     {
@@ -88,7 +91,15 @@ class RouteCollection
                 $suffix = '/' . $suffix;
             }
 
+            // Mise à jour du chemin
             $routeMethod->setPath($prefix . $suffix);
+
+            // Traitement du préfixe de nom
+            $namePrefix = $routeClass->getName();
+            $nameSuffix = $routeMethod->getName();
+
+            // Mise à jour du nom
+            $routeMethod->setName($namePrefix . $nameSuffix);
         }
 
         return $routeMethod;
