@@ -21,8 +21,20 @@ use YouRoute\YouRouteKernal;
  */
 class Application
 {
-    /** @var HttpKernel */
-    private HttpKernel $kernel;
+    /** @var HttpKernel|null */
+    private ?HttpKernel $kernel = null;
+
+    /** @var Container */
+    private Container $container;
+
+    /** @var string */
+    private string $projectDir;
+
+    /** @var string|null */
+    private ?string $controllerPath = null;
+
+    /** @var bool */
+    private bool $booted = false;
 
     /**
      * @param string|null $projectDir La racine du projet. Si null, tente de la deviner.
@@ -43,22 +55,63 @@ class Application
             }
         }
 
-        // 2. Initialisation du container
-        $container = new Container();
+        $this->projectDir = $projectDir;
 
-        $controllersPath = $projectDir . '/src/Controller';
+        // 2. Initialisation du container
+        $this->container = new Container();
+    }
+
+    /**
+     * Permet de définir un chemin personnalisé pour les contrôleurs.
+     *
+     * @param string $path
+     * @return self
+     */
+    public function withControllerPath(string $path): self
+    {
+        $this->controllerPath = $path;
+        return $this;
+    }
+
+    /**
+     * Récupère le conteneur de services pour une configuration avancée.
+     *
+     * @return Container
+     */
+    public function getContainer(): Container
+    {
+        return $this->container;
+    }
+
+    /**
+     * Démarre le kernel et initialise les composants.
+     *
+     * @throws ReflectionException
+     */
+    public function boot(): self
+    {
+        if ($this->booted) {
+            return $this;
+        }
+
+        // Détermination du chemin des contrôleurs ou fallback sur src/Controller
+        $controllersPath = $this->controllerPath ?? ($this->projectDir . '/src/Controller');
 
         $router = new YouRouteKernal($controllersPath);
 
         // Enregistrement des services cœurs
-        $container->set(YouRouteKernal::class, $router);
-        $container->set(Container::class, $container);
+        $this->container->set(YouRouteKernal::class, $router);
+        $this->container->set(Container::class, $this->container);
 
-        // 3. Initialisation du résolveur avec le conteneur
-        $resolver = new ControllerResolver($container);
+        // Initialisation du résolveur avec le conteneur
+        $resolver = new ControllerResolver($this->container);
 
-        // 4. Initialisation du Kernel
+        // Initialisation du Kernel
         $this->kernel = new HttpKernel($router, $resolver);
+
+        $this->booted = true;
+
+        return $this;
     }
 
     /**
@@ -67,6 +120,10 @@ class Application
      */
     public function runHttp(): void
     {
+        if (!$this->booted) {
+            $this->boot();
+        }
+
         // 1. Création de la requête depuis les globales
         $request = Request::createFromGlobals();
 
