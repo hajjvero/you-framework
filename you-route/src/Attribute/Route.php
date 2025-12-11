@@ -50,7 +50,7 @@ final class Route
     public function __construct(string $path, string $name = '', string|array $methods = 'GET')
     {
         $this->setPath($path);
-        $this->name = $name;
+        $this->setName($name);
         $this->setMethods($methods);
     }
 
@@ -62,6 +62,17 @@ final class Route
     public function getName(): string
     {
         return $this->name;
+    }
+
+    /**
+     * Définit le nom de la route.
+     *
+     * @param string $name Le nom de la route.
+     * @return void
+     */
+    public function setName(string $name): void
+    {
+        $this->name = $name;
     }
 
     /**
