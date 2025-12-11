@@ -57,6 +57,11 @@ class ControllerResolver
         // Instanciation du contrôleur via le conteneur (injection de dépendances)
         $controllerInstance = $this->container->get($controllerClass);
 
+        // Injection du conteneur si le contrôleur étend AbstractController
+        if ($controllerInstance instanceof AbstractController) {
+            $controllerInstance->setContainer($this->container);
+        }
+
         if (!method_exists($controllerInstance, $methodName)) {
             throw new RuntimeException("La méthode '{$methodName}' n'existe pas dans le contrôleur '{$controllerClass}'.");
         }
