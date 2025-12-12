@@ -6,6 +6,8 @@ on:
       - 'features/**'
       - 'fix/**'
       - 'refactor/**'
+      - 'docs/**'
+      - 'chore/**'
       - '!dev'
 
 jobs:
@@ -55,8 +57,7 @@ jobs:
             --base dev \
             --head "${{ steps.extract_branch.outputs.branch_name }}" \
             --title "${{ steps.extract_branch.outputs.pr_title }}" \
-            --body "Auto-generated PR from ${{ steps.extract_branch.outputs.branch_name }}" \
-            --assignee "@me")
+            --body "Auto-generated PR from ${{ steps.extract_branch.outputs.branch_name }}")
           
           PR_NUMBER=$(echo "$PR_URL" | grep -oP '\d+$')
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
