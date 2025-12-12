@@ -86,7 +86,7 @@ class YouConsoleKernel
     /**
      * Découvre automatiquement les commandes dans le répertoire configuré.
      */
-    public function autoDiscoverCommands(): void
+    private function autoDiscoverCommands(): void
     {
         $discovery = new CommandDiscovery($this->container);
         $discoveredCommands = $discovery->discover($this->commandsDirectory);
