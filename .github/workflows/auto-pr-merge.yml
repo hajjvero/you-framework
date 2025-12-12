@@ -1,3 +1,26 @@
+# Auto PR and Merge to Dev
+#
+# This workflow automatically creates a pull request and merges it to the dev branch
+# when pushing to feature branches (features/**, fix/**, refactor/**, docs/**, chore/**).
+#
+# SETUP REQUIRED:
+# 1. Create a Personal Access Token (PAT) with 'repo' and 'workflow' scopes:
+#    - Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+#    - Click "Generate new token (classic)"
+#    - Select scopes: 'repo' (full control) and 'workflow'
+#    - Generate and copy the token
+#
+# 2. Add the token as a repository secret:
+#    - Go to your repository Settings → Secrets and variables → Actions
+#    - Click "New repository secret"
+#    - Name: PAT_TOKEN
+#    - Value: paste your token
+#    - Click "Add secret"
+#
+# 3. Enable auto-merge in repository settings:
+#    - Go to Settings → General → Pull Requests
+#    - Check "Allow auto-merge"
+
 name: Auto PR and Merge to Dev
 
 on:
@@ -36,7 +59,7 @@ jobs:
       - name: Check if PR already exists
         id: check_pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           PR_NUMBER=$(gh pr list --head "${{ steps.extract_branch.outputs.branch_name }}" --base dev --json number --jq '.[0].number')
           if [ -z "$PR_NUMBER" ]; then
@@ -51,7 +74,7 @@ jobs:
         if: steps.check_pr.outputs.pr_exists == 'false'
         id: create_pr
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           PR_URL=$(gh pr create \
             --base dev \
@@ -74,14 +97,14 @@ jobs:
       
       - name: Wait for checks to complete
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           echo "Waiting for checks to complete..."
           sleep 10
       
       - name: Merge Pull Request
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           gh pr merge ${{ steps.set_pr_number.outputs.pr_number }} \
             --auto \
