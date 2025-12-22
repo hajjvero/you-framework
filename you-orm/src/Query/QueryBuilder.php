@@ -373,6 +373,37 @@ class QueryBuilder
     }
 
     /**
+     * Exécute la requête et retourne tous les résultats sous forme de tableau.
+     *
+     * @return array
+     */
+    public function getResult(): array
+    {
+        return $this->execute()->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Exécute la requête et retourne le premier résultat ou null.
+     *
+     * @return array|null
+     */
+    public function getSingleResult(): ?array
+    {
+        $result = $this->execute()->fetch(\PDO::FETCH_ASSOC);
+        return $result ?: null;
+    }
+
+    /**
+     * Exécute la requête et retourne le nombre de lignes affectées.
+     *
+     * @return int
+     */
+    public function getAffectedRows(): int
+    {
+        return $this->execute()->rowCount();
+    }
+
+    /**
      * Réinitialise le constructeur de requête pour une nouvelle utilisation.
      *
      * @return self
