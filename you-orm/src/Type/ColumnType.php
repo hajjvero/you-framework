@@ -21,4 +21,6 @@ interface ColumnType
     public const string JSON = 'json';
     public const string BLOB = 'blob';
     public const string DECIMAL = 'decimal';
+    public const string ARRAY = 'array';
+    public const string ENUM = 'enum';
 }

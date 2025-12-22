@@ -5,6 +5,12 @@ namespace YouOrm\Query;
 use PDO;
 use PDOStatement;
 
+use YouOrm\Query\Grammar\GrammarInterface;
+use YouOrm\Query\Grammar\MySqlGrammar;
+use YouOrm\Query\Grammar\PostgreSqlGrammar;
+use YouOrm\Query\Grammar\SqliteGrammar;
+use YouOrm\Query\Grammar\SqlServerGrammar;
+
 /**
  * Class QueryBuilder
  * Un constructeur de requêtes SQL fluide et expressif.
@@ -56,6 +62,9 @@ class QueryBuilder
     /** @var array Liste des clauses HAVING */
     private array $havings = [];
 
+    /** @var GrammarInterface Grammaire SQL pour le SGBD actuel */
+    private GrammarInterface $grammar;
+
     /**
      * Initialise une nouvelle instance du QueryBuilder.
      *
@@ -64,6 +73,44 @@ class QueryBuilder
     public function __construct(PDO $pdo)
     {
         $this->pdo = $pdo;
+        $this->detectGrammar();
+    }
+
+    /**
+     * Détecte et instancie la grammaire appropriée selon le driver PDO.
+     */
+    private function detectGrammar(): void
+    {
+        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+        $this->grammar = match ($driver) {
+            'pgsql' => new PostgreSqlGrammar(),
+            'sqlsrv' => new SqlServerGrammar(),
+            'sqlite' => new SqliteGrammar(),
+            default => new MySqlGrammar(),
+        };
+    }
+
+    /**
+     * Définit manuellement une grammaire.
+     *
+     * @param GrammarInterface $grammar
+     * @return self
+     */
+    public function setGrammar(GrammarInterface $grammar): self
+    {
+        $this->grammar = $grammar;
+        return $this;
+    }
+
+    /**
+     * Retourne la grammaire utilisée.
+     *
+     * @return GrammarInterface
+     */
+    public function getGrammar(): GrammarInterface
+    {
+        return $this->grammar;
     }
 
     /**
@@ -299,62 +346,17 @@ class QueryBuilder
      */
     public function getQuery(): string
     {
-        // SELECT
-        $sql = "SELECT " . implode(', ', $this->selects);
-
-        // FROM
-        if ($this->from) {
-            $sql .= " FROM " . $this->from;
-        }
-
-        // JOINS
-        if (!empty($this->joins)) {
-            $sql .= " " . implode(' ', $this->joins);
-        }
-
-        // WHERE
-        if (!empty($this->wheres)) {
-            $sql .= " WHERE ";
-            foreach ($this->wheres as $index => $where) {
-                if ($index > 0) {
-                    $sql .= " " . $where['type'] . " ";
-                }
-                $sql .= $where['condition'];
-            }
-        }
-
-        // GROUP BY
-        if (!empty($this->groups)) {
-            $sql .= " GROUP BY " . implode(', ', $this->groups);
-        }
-
-        // HAVING
-        if (!empty($this->havings)) {
-            $sql .= " HAVING ";
-            foreach ($this->havings as $index => $having) {
-                if ($index > 0) {
-                    $sql .= " " . $having['type'] . " ";
-                }
-                $sql .= $having['condition'];
-            }
-        }
-
-        // ORDER BY
-        if (!empty($this->orderBy)) {
-            $sql .= " ORDER BY " . implode(', ', $this->orderBy);
-        }
-
-        // LIMIT
-        if ($this->limit !== null) {
-            $sql .= " LIMIT " . $this->limit;
-        }
-
-        // OFFSET
-        if ($this->offset !== null) {
-            $sql .= " OFFSET " . $this->offset;
-        }
-
-        return $sql;
+        return $this->grammar->compileSelect(
+            $this->selects,
+            $this->from,
+            $this->joins,
+            $this->wheres,
+            $this->groups,
+            $this->havings,
+            $this->orderBy,
+            $this->limit,
+            $this->offset
+        );
     }
 
     /**

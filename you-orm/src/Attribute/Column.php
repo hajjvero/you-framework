@@ -3,6 +3,7 @@
 namespace YouOrm\Attribute;
 
 use Attribute;
+use YouOrm\Type\ColumnType;
 
 /**
  * Attribut permettant de définir une colonne de base de données associée à une propriété d'entité.
@@ -28,7 +29,7 @@ class Column
      */
     public function __construct(
         private string $name,
-        private string $type = 'string',
+        private string $type = ColumnType::STRING,
         private ?int $length = null,
         private bool $nullable = false,
         private bool $unique = false,
