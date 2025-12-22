@@ -41,9 +41,7 @@ abstract class AbstractRepository
      */
     protected function getTableName(): string
     {
-        $reflection = new ReflectionClass($this->entityClass);
-        $attributes = $reflection->getAttributes(Table::class);
-        return $attributes[0]->newInstance()->name;
+        return $this->em->getTableName($this->entityClass);
     }
 
     /**
