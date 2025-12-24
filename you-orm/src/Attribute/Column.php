@@ -3,6 +3,8 @@
 namespace YouOrm\Attribute;
 
 use Attribute;
+use InvalidArgumentException;
+use ReflectionClass;
 use YouOrm\Type\ColumnType;
 
 /**
@@ -38,6 +40,7 @@ class Column
         private ?int $precision = null,
         private ?int $scale = null
     ) {
+        $this->validateType($this->type);
     }
 
     /**
@@ -80,6 +83,7 @@ class Column
      */
     public function setType(string $type): self
     {
+        $this->validateType($type);
         $this->type = $type;
         return $this;
     }
@@ -236,5 +240,23 @@ class Column
     {
         $this->scale = $scale;
         return $this;
+    }
+
+    /**
+     * Valide si le type de colonne est supporté.
+     *
+     * @param string $type Le type à valider.
+     * @throws InvalidArgumentException Si le type n'est pas valide.
+     */
+    private function validateType(string $type): void
+    {
+        $reflection = new ReflectionClass(ColumnType::class);
+        $validTypes = $reflection->getConstants();
+
+        if (!in_array($type, $validTypes, true)) {
+            throw new InvalidArgumentException(
+                sprintf('Le type "%s" n\'est pas un type de colonne valide. Les types supportés sont : %s', $type, implode(', ', $validTypes))
+            );
+        }
     }
 }
