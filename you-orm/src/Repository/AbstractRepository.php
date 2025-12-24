@@ -2,8 +2,6 @@
 
 namespace YouOrm\Repository;
 
-use ReflectionClass;
-use YouOrm\Attribute\Table;
 use YouOrm\EntityManager;
 use YouOrm\Query\QueryBuilder;
 
