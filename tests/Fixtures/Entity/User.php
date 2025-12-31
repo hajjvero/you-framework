@@ -3,8 +3,8 @@
 namespace Test\Entity;
 
 use YouOrm\Attribute\Column;
-use YouOrm\Attribute\Table;
-use YouOrm\Type\ColumnType;
+use YouOrm\Schema\Attribute\Table;
+use YouOrm\Schema\Type\ColumnType;
 
 #[Table(name: 'users')]
 class User

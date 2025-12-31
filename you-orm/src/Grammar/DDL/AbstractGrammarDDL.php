@@ -2,8 +2,8 @@
 
 namespace YouOrm\Grammar\DDL;
 
-use YouOrm\Attribute\Column;
-use YouOrm\Type\ColumnType;
+use YouOrm\Schema\Attribute\Column;
+use YouOrm\Schema\Type\ColumnType;
 
 /**
  * Class AbstractGrammarDDL
@@ -40,6 +40,42 @@ abstract class AbstractGrammarDDL implements GrammarDDLInterface
     public function compileDropTable(string $table): string
     {
         return sprintf('DROP TABLE %s', $this->wrap($table));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function compileAddColumn(string $table, Column $column): string
+    {
+        return sprintf(
+            'ALTER TABLE %s ADD %s',
+            $this->wrap($table),
+            $this->compileColumn($column)
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function compileDropColumn(string $table, string $columnName): string
+    {
+        return sprintf(
+            'ALTER TABLE %s DROP COLUMN %s',
+            $this->wrap($table),
+            $this->wrap($columnName)
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function compileModifyColumn(string $table, Column $oldColumn, Column $newColumn): string
+    {
+        return sprintf(
+            'ALTER TABLE %s MODIFY %s',
+            $this->wrap($table),
+            $this->compileColumn($newColumn)
+        );
     }
 
     /**
@@ -81,7 +117,8 @@ abstract class AbstractGrammarDDL implements GrammarDDLInterface
      * @param Column $column
      * @return string
      */
-    protected function getType(Column $column): string {
+    protected function getType(Column $column): string
+    {
         $length = $column->getLength();
         $precision = $column->getPrecision();
         $scale = $column->getScale();
@@ -92,7 +129,7 @@ abstract class AbstractGrammarDDL implements GrammarDDLInterface
             ColumnType::BIGINT => 'BIGINT',
             ColumnType::DECIMAL => sprintf('NUMERIC(%d, %d)', $precision ?? 10, $scale ?? 0),
             ColumnType::SMALL_FLOAT => 'REAL',
-            ColumnType::FLOAT => 'DOUBLE PRECISION',
+            ColumnType::FLOAT => 'DOUBLE',
             ColumnType::STRING => sprintf('VARCHAR(%d)', $length ?? 255),
             ColumnType::TEXT => 'TEXT',
             ColumnType::UUID => 'CHAR(36)',

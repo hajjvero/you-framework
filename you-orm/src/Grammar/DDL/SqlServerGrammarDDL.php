@@ -2,7 +2,8 @@
 
 namespace YouOrm\Grammar\DDL;
 
-use YouOrm\Type\ColumnType;
+use YouOrm\Schema\Attribute\Column;
+use YouOrm\Schema\Type\ColumnType;
 
 /**
  * Class SqlServerGrammarDDL
@@ -25,7 +26,7 @@ class SqlServerGrammarDDL extends AbstractGrammarDDL
     /**
      * {@inheritDoc}
      */
-    protected function getType($column): string
+    protected function getType(Column $column): string
     {
         $length = $column->getLength();
 

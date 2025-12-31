@@ -2,8 +2,8 @@
 
 namespace YouOrm\Grammar\DDL;
 
-use YouOrm\Attribute\Column;
-use YouOrm\Type\ColumnType;
+use YouOrm\Schema\Attribute\Column;
+use YouOrm\Schema\Type\ColumnType;
 
 /**
  * Class MySqlGrammarDDL
@@ -19,8 +19,8 @@ class MySqlGrammarDDL extends AbstractGrammarDDL
     protected function getType(Column $column): string
     {
         return match ($column->getType()) {
+            ColumnType::DECIMAL => sprintf('DECIMAL(%d, %d)', $column->getPrecision() ?? 10, $column->getScale() ?? 0),
             ColumnType::SMALL_FLOAT => 'FLOAT',
-            ColumnType::BOOLEAN => 'TINYINT(1)',
             ColumnType::ARRAY => 'LONGTEXT',
             default => parent::getType($column),
         };

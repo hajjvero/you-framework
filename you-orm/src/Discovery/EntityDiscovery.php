@@ -7,7 +7,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
 use SplFileInfo;
-use YouOrm\Attribute\Table;
+use YouOrm\Schema\Attribute\Table;
 
 /**
  * Class EntityDiscovery
@@ -43,29 +43,11 @@ class EntityDiscovery
 
             $className = fqcn($file->getPathname());
 
-            if ($className && $this->isEntity($className)) {
+            if ($className) {
                 $entities[] = $className;
             }
         }
 
         return $entities;
-    }
-
-    /**
-     * Check if the class is an entity (has Table attribute).
-     *
-     * @param string $className
-     * @return bool
-     */
-    protected function isEntity(string $className): bool
-    {
-        if (!class_exists($className)) {
-            return false;
-        }
-
-        $reflection = new ReflectionClass($className);
-        $attributes = $reflection->getAttributes(Table::class);
-
-        return !empty($attributes);
     }
 }

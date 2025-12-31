@@ -2,8 +2,8 @@
 
 namespace YouOrm\Grammar\DDL;
 
-use YouOrm\Attribute\Column;
-use YouOrm\Type\ColumnType;
+use YouOrm\Schema\Attribute\Column;
+use YouOrm\Schema\Type\ColumnType;
 
 /**
  * Class PostgreSqlGrammarDDL

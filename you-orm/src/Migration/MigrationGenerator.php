@@ -2,15 +2,14 @@
 
 namespace YouOrm\Migration;
 
-use ReflectionClass;
-use YouOrm\Attribute\Column;
-use YouOrm\Attribute\Table;
 use YouOrm\Discovery\EntityDiscovery;
 use YouOrm\Grammar\DDL\GrammarDDLInterface;
+use YouOrm\Schema\SchemaDiff;
+use YouOrm\Schema\TableDiff;
 
 /**
  * Class MigrationGenerator
- * Responsible for generating migration SQL from discovered entities.
+ * Responsible for generating migration SQL from schema differences.
  */
 class MigrationGenerator
 {
@@ -25,64 +24,63 @@ class MigrationGenerator
     }
 
     /**
-     * Generate SQL for the given paths.
+     * Generate migration SQL from a SchemaDiff.
      *
-     * @param string $directory The directory to scan for entities.
-     * @return string
+     * @param SchemaDiff $diff
+     * @return array ['up' => string, 'down' => string]
      */
-    public function generate(string $directory): string
+    public function generateDiff(SchemaDiff $diff): array
     {
-        $entities = $this->discovery->discover($directory);
-        $sqlParts = [];
+        $up = [];
+        $down = [];
 
-        foreach ($entities as $entityClass) {
-            $sqlParts[] = $this->generateSqlForEntity($entityClass);
+        // 1. New Tables
+        foreach ($diff->newTables as $table) {
+            $up[] = $this->grammar->compileCreateTable($table->getName(), $table->getColumns()) . ';';
+            $down[] = $this->grammar->compileDropTable($table->getName()) . ';';
         }
 
-        return implode("\n\n", array_filter($sqlParts));
+        // 2. Changed Tables
+        foreach ($diff->changedTables as $tableDiff) {
+            $this->generateTableDiffSql($tableDiff, $up, $down);
+        }
+
+        // 3. Removed Tables
+        // (Optional: usually we don't auto-drop tables for safety, but here we implement it for completeness)
+        foreach ($diff->removedTables as $tableName) {
+            // We don't have the full table structure for the 'down' part here easily without more info
+            // but for now let's just do the 'up' part
+            $up[] = $this->grammar->compileDropTable($tableName) . ';';
+            // $down would require the full table definition which we might not have in the diff
+        }
+
+        return [
+            'up' => implode("\n", $up),
+            'down' => implode("\n", $down),
+        ];
     }
 
-    /**
-     * Generate SQL for a single entity class.
-     *
-     * @param string $entityClass
-     * @return string|null
-     */
-    protected function generateSqlForEntity(string $entityClass): ?string
+    protected function generateTableDiffSql(TableDiff $tableDiff, array &$up, array &$down): void
     {
-        try {
-            $reflection = new ReflectionClass($entityClass);
+        $tableName = $tableDiff->tableName;
 
-            // Get Table attribute
-            $tableAttributes = $reflection->getAttributes(Table::class);
-            if (empty($tableAttributes)) {
-                return null;
-            }
+        // Added Columns
+        foreach ($tableDiff->addedColumns as $column) {
+            $up[] = $this->grammar->compileAddColumn($tableName, $column) . ';';
+            $down[] = $this->grammar->compileDropColumn($tableName, $column->getName()) . ';';
+        }
 
-            /** @var Table $tableAttr */
-            $tableAttr = $tableAttributes[0]->newInstance();
-            $tableName = $tableAttr->getName();
+        // Changed Columns
+        foreach ($tableDiff->changedColumns as $columnDiff) {
+            $up[] = $this->grammar->compileModifyColumn($tableName, $columnDiff->oldColumn, $columnDiff->newColumn) . ';';
+            $down[] = $this->grammar->compileModifyColumn($tableName, $columnDiff->newColumn, $columnDiff->oldColumn) . ';';
+        }
 
-            // Get Column attributes
-            $columns = [];
-            foreach ($reflection->getProperties() as $property) {
-                $columnAttributes = $property->getAttributes(Column::class);
-                if (empty($columnAttributes)) {
-                    continue;
-                }
-
-                $columns[] = $columnAttributes[0]->newInstance();
-            }
-
-            if (empty($columns)) {
-                return null;
-            }
-
-            return $this->grammar->compileCreateTable($tableName, $columns) . ';';
-
-        } catch (\ReflectionException $e) {
-            // Handle error or log
-            return "-- Error generating SQL for $entityClass: " . $e->getMessage();
+        // Removed Columns
+        foreach ($tableDiff->removedColumns as $columnName) {
+            $up[] = $this->grammar->compileDropColumn($tableName, $columnName) . ';';
+            // $down would require the old column definition
         }
     }
+
 }

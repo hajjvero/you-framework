@@ -2,10 +2,10 @@
 
 namespace App\Entity;
 
-use YouOrm\Attribute\Table;
 use YouOrm\Attribute\Column;
 use YouOrm\Attribute\PrimaryKey;
-use YouOrm\Type\ColumnType;
+use YouOrm\Schema\Attribute\Table;
+use YouOrm\Schema\Type\ColumnType;
 
 #[Table(name: 'users')]
 class User

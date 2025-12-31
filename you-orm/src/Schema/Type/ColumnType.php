@@ -1,6 +1,6 @@
 <?php
 
-namespace YouOrm\Type;
+namespace YouOrm\Schema\Type;
 
 /**
  * Interface définissant les types de colonnes disponibles pour l'ORM.
