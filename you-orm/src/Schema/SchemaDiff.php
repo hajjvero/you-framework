@@ -14,7 +14,7 @@ class SchemaDiff
     /** @var Table[] */
     public array $newTables = [];
 
-    /** @var string[] */
+    /** @var Table[] */
     public array $removedTables = [];
 
     /** @var TableDiff[] */
@@ -35,7 +35,7 @@ class TableDiff
     /** @var Column[] */
     public array $addedColumns = [];
 
-    /** @var string[] */
+    /** @var Column[] */
     public array $removedColumns = [];
 
     /** @var ColumnDiff[] */

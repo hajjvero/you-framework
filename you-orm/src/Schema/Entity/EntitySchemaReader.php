@@ -66,10 +66,10 @@ readonly class EntitySchemaReader
                     continue;
                 }
 
-                /** @var Column $columnAttr */
-                $columnAttr = $columnAttrs[0]->newInstance();
+                /** @var Column $column */
+                $column = $column[0]->newInstance();
 
-                $columns[] = $columnAttr;
+                $columns[] = $column;
             }
 
             // TODO: Index discovery could be added here if there's an Index attribute

@@ -36,7 +36,7 @@ class SchemaComparator
         // Check for removed tables
         foreach ($oldSchema->getTables() as $oldTable) {
             if (!$newSchema->hasTable($oldTable->getName())) {
-                $diff->removedTables[] = $oldTable->getName();
+                $diff->removedTables[] = $oldTable;
             }
         }
 
@@ -62,7 +62,7 @@ class SchemaComparator
         // Check for removed columns
         foreach ($oldTable->getColumns() as $oldColumn) {
             if (!$newTable->hasColumn($oldColumn?->getName() ?? '')) {
-                $diff->removedColumns[] = $oldColumn?->getName();
+                $diff->removedColumns[] = $oldColumn;
             }
         }
 

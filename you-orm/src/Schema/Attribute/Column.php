@@ -121,13 +121,19 @@ readonly class Column
 
     private function formatDefault(mixed $value): string
     {
-        if ($value === null) {
-            return 'NULL';
+        if (is_string($value)) {
+            return sprintf("'%s'", addslashes($value));
         }
+
         if (is_bool($value)) {
             return $value ? '1' : '0';
         }
-        return (string)$value;
+
+        if (is_null($value)) {
+            return 'NULL';
+        }
+
+        return (string) $value;
     }
 
     /**

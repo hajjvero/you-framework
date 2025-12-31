@@ -46,12 +46,9 @@ class MigrationGenerator
         }
 
         // 3. Removed Tables
-        // (Optional: usually we don't auto-drop tables for safety, but here we implement it for completeness)
-        foreach ($diff->removedTables as $tableName) {
-            // We don't have the full table structure for the 'down' part here easily without more info
-            // but for now let's just do the 'up' part
-            $up[] = $this->grammar->compileDropTable($tableName) . ';';
-            // $down would require the full table definition which we might not have in the diff
+        foreach ($diff->removedTables as $table) {
+            $up[] = $this->grammar->compileDropTable($table->getName()) . ';';
+            $down[] = $this->grammar->compileCreateTable($table->getName(), $table->getColumns()) . ';';
         }
 
         return [
@@ -77,9 +74,9 @@ class MigrationGenerator
         }
 
         // Removed Columns
-        foreach ($tableDiff->removedColumns as $columnName) {
-            $up[] = $this->grammar->compileDropColumn($tableName, $columnName) . ';';
-            // $down would require the old column definition
+        foreach ($tableDiff->removedColumns as $column) {
+            $up[] = $this->grammar->compileDropColumn($tableName, $column->getName()) . ';';
+            $down[] = $this->grammar->compileAddColumn($tableName, $column) . ';';
         }
     }
 
