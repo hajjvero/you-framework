@@ -2,16 +2,14 @@
 
 namespace YouMake\Command\Generator;
 
-use YouConsole\Input\Input;
-use YouConsole\Output\Output;
+use ReflectionException;
+use YouConfig\Config;
 
 /**
  * Commande pour générer une nouvelle commande console.
  */
 class CommandMakeCommand extends AbstractGeneratorCommand
 {
-    private ?Input $currentInput = null;
-
     /**
      * @return void
      */
@@ -19,8 +17,7 @@ class CommandMakeCommand extends AbstractGeneratorCommand
     {
         $this->setName('make:command')
             ->setDescription('Génère une nouvelle commande console')
-            ->addArgument('name', true, 'Le nom de la classe de la commande')
-            ->addArgument('command_name', false, 'Le nom de la commande (ex: app:my-command)');
+            ->addArgument('name', true, 'Le nom de la classe de la commande');
     }
 
     /**
@@ -32,39 +29,31 @@ class CommandMakeCommand extends AbstractGeneratorCommand
     }
 
     /**
-     * @param string $name
+     * {@inheritDoc}
+     * @param string $className
      * @return string
+     * @throws ReflectionException
      */
-    protected function getDestinationPath(string $name): string
+    protected function getDestinationPath(string $className): string
     {
-        $name = str_replace('\\', '/', $name);
-        return getcwd() . '/src/Command/' . $name . '.php';
+        $config = $this->container->get(Config::class);
+        $projectDir = $this->container->get('project_dir');
+
+        $commandsPath = $projectDir . '/' . ltrim($config->get('app.routes.commands', 'src/Command'), '/');
+        $className = str_replace('\\', '/', $className);
+
+        return sprintf('%s/%s.php', $commandsPath, ltrim($className, '/'));
     }
 
     /**
-     * @param Input $input
-     * @param Output $output
-     * @return int
+     * {@inheritDoc}
      */
-    protected function execute(Input $input, Output $output): int
+    protected function getReplacements(string $className): array
     {
-        $this->currentInput = $input;
-        return parent::execute($input, $output);
-    }
+        $replacements = parent::getReplacements($className);
 
-    /**
-     * @param string $name
-     * @return array<string, string>
-     */
-    protected function getReplacements(string $name): array
-    {
-        $replacements = parent::getReplacements($name);
-        $commandName = $this->currentInput?->getArgument('command_name');
-
-        if (!$commandName) {
-            $class = $this->getClassName($name);
-            $commandName = 'app:' . strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', str_replace('Command', '', $class)));
-        }
+        $class = $this->getClassName($className);
+        $commandName = 'app:' . strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', str_replace('Command', '', $class)));
 
         $replacements['{{ command_name }}'] = $commandName;
 
@@ -72,13 +61,12 @@ class CommandMakeCommand extends AbstractGeneratorCommand
     }
 
     /**
-     * @param string $name
-     * @return string
+     * {@inheritDoc}
      */
-    protected function getDefaultNamespace(string $name): string
+    protected function getDefaultNamespace(string $className): string
     {
         $namespace = 'App\\Command';
-        $parts = explode('\\', str_replace('/', '\\', $name));
+        $parts = explode('\\', str_replace('/', '\\', $className));
         array_pop($parts);
 
         if (!empty($parts)) {

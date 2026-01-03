@@ -6,6 +6,7 @@ use YouConsole\Command\AbstractCommand;
 use YouConsole\Input\Input;
 use YouConsole\Output\Output;
 use RuntimeException;
+use YouKernel\Component\Container\Container;
 
 /**
  * Classe de base pour les commandes de génération.
@@ -16,6 +17,11 @@ use RuntimeException;
  */
 abstract class AbstractGeneratorCommand extends AbstractCommand
 {
+    public function __construct(protected Container $container)
+    {
+        parent::__construct();
+    }
+
     /**
      * Retourne le chemin vers le stub à utiliser.
      *
@@ -26,23 +32,22 @@ abstract class AbstractGeneratorCommand extends AbstractCommand
     /**
      * Retourne le chemin de destination du fichier généré.
      *
-     * @param string $name Nom de l'élément à générer
+     * @param string $className Le nom de la classe
      * @return string
      */
-    abstract protected function getDestinationPath(string $name): string;
+    abstract protected function getDestinationPath(string $className): string;
 
     /**
      * Retourne les remplacements à effectuer dans le stub.
      *
-     * @param string $name Nom de l'élément à générer
+     * @param string $className Le nom de la classe
      * @return array<string, string>
      */
-    protected function getReplacements(string $name): array
+    protected function getReplacements(string $className): array
     {
         return [
-            '{{ name }}' => $name,
-            '{{ namespace }}' => $this->getDefaultNamespace($name),
-            '{{ class }}' => $this->getClassName($name),
+            '{{ namespace }}' => $this->getDefaultNamespace($className),
+            '{{ class }}' => $this->getClassName($className),
         ];
     }
 
@@ -55,14 +60,14 @@ abstract class AbstractGeneratorCommand extends AbstractCommand
      */
     protected function execute(Input $input, Output $output): int
     {
-        $name = $input->getArgument('name');
+        $className = $input->getArgument('name');
 
-        if (!$name) {
+        if (!$className) {
             $output->error("Le nom est obligatoire.");
             return self::STATUS_ERROR;
         }
 
-        $path = $this->getDestinationPath($name);
+        $path = $this->getDestinationPath($className);
 
         if (file_exists($path)) {
             $output->error("Le fichier existe déjà : $path");
@@ -71,7 +76,7 @@ abstract class AbstractGeneratorCommand extends AbstractCommand
 
         $this->makeDirectory($path);
 
-        $content = $this->buildClass($name);
+        $content = $this->buildClass($className);
 
         if (file_put_contents($path, $content) === false) {
             $output->error("Impossible d'écrire le fichier : $path");
@@ -86,10 +91,10 @@ abstract class AbstractGeneratorCommand extends AbstractCommand
     /**
      * Construit le contenu de la classe à partir du stub.
      *
-     * @param string $name
+     * @param string $className
      * @return string
      */
-    protected function buildClass(string $name): string
+    protected function buildClass(string $className): string
     {
         $stub = file_get_contents($this->getStubPath());
 
@@ -97,7 +102,7 @@ abstract class AbstractGeneratorCommand extends AbstractCommand
             throw new RuntimeException("Stub introuvable : " . $this->getStubPath());
         }
 
-        $replacements = $this->getReplacements($name);
+        $replacements = $this->getReplacements($className);
 
         return str_replace(
             array_keys($replacements),
@@ -117,17 +122,19 @@ abstract class AbstractGeneratorCommand extends AbstractCommand
         $directory = dirname($path);
 
         if (!is_dir($directory)) {
-            mkdir($directory, 0777, true);
+            if (!mkdir($directory, 0777, true) && !is_dir($directory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $directory));
+            }
         }
     }
 
     /**
      * Retourne le namespace par défaut.
      *
-     * @param string $name
+     * @param string $className
      * @return string
      */
-    protected function getDefaultNamespace(string $name): string
+    protected function getDefaultNamespace(string $className): string
     {
         return 'App';
     }
