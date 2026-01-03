@@ -39,7 +39,7 @@ class CommandMakeCommand extends AbstractGeneratorCommand
         $config = $this->container->get(Config::class);
         $projectDir = $this->container->get('project_dir');
 
-        $commandsPath = $projectDir . '/' . ltrim($config->get('app.routes.commands', 'src/Command'), '/');
+        $commandsPath = $projectDir . '/' . ltrim($config->get('app.commands.resource', 'src/Command'), '/');
         $className = str_replace('\\', '/', $className);
 
         return sprintf('%s/%s.php', $commandsPath, ltrim($className, '/'));
