@@ -91,6 +91,14 @@ class MigrationMakeCommand extends AbstractGeneratorCommand
         return sprintf('%s/%s.php', $migrationsPath, $className);
     }
 
+    private function getEntitiesPath(): string
+    {
+        $config = $this->container->get(Config::class);
+        $projectDir = $this->container->get('project_dir');
+
+        return $projectDir . '/' . ltrim($config->get('database.entities_path', 'src/Entity'), '/');
+    }
+
     /**
      * @param string $className
      * @return array<string, string>
@@ -106,15 +114,12 @@ class MigrationMakeCommand extends AbstractGeneratorCommand
 
         $driver = $config->get('database.driver', 'mysql');
 
-        $entitiesPath = $config->get('database.entities_path', 'entities');
-
-
         // 1. Setup Discovery
         $discovery = new EntityDiscovery();
         $reader = new EntitySchemaReader($discovery);
 
         // 2. Read Schema from Entities
-        $newSchema = $reader->read($entitiesPath);
+        $newSchema = $reader->read($this->getEntitiesPath());
 
         if (count($newSchema->getTables()) === 0) {
             echo OutputStyle::apply('error', '[FAIL] No tables found in schema.\\n');
