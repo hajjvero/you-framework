@@ -2,6 +2,7 @@
 
 namespace YouConsole;
 
+use YouConfig\Config;
 use YouConsole\Command\AbstractCommand;
 use YouConsole\Command\CommandCollection;
 use YouConsole\Command\CommandDiscovery;
@@ -17,14 +18,10 @@ class YouConsoleKernel
     /** @var Output Gestionnaire de sortie */
     private Output $output;
 
-    /** @var array<string> Répertoires des commandes pour l'auto-discovery */
-    private array $commandsDirectories = [];
-
     public function __construct(private Container $container)
     {
         $this->output = new Output();
         $this->commandCollection = new CommandCollection();
-        $this->addCommandsDirectory($container->get('project_dir') . '/src/Command');
     }
 
     /**
@@ -92,10 +89,10 @@ class YouConsoleKernel
     {
         $discovery = new CommandDiscovery($this->container);
 
-        foreach ($this->commandsDirectories as $directory) {
-            $discoveredCommands = $discovery->discover($directory);
-            $this->registerCommand(...$discoveredCommands);
-        }
+        $directory = $this->container->get('project_dir') . '/' . ltrim($this->container->get(Config::class)->get('app.commands.resource', '/src/Command'), '/');
+
+        $discoveredCommands = $discovery->discover($directory);
+        $this->registerCommand(...$discoveredCommands);
     }
 
     /**
@@ -120,37 +117,4 @@ class YouConsoleKernel
         // Le premier argument est le nom du script, le second est la commande
         return $argv[1] ?? '';
     }
-
-    /**
-     * @return array<string>
-     */
-    public function getCommandsDirectories(): array
-    {
-        return $this->commandsDirectories;
-    }
-
-    /**
-     * @param string $commandsDirectory
-     * @return YouConsoleKernel
-     */
-    public function addCommandsDirectory(string $commandsDirectory): self
-    {
-        if (!in_array($commandsDirectory, $this->commandsDirectories)) {
-            $this->commandsDirectories[] = $commandsDirectory;
-        }
-
-        return $this;
-    }
-
-    /**
-     * @deprecated Use addCommandsDirectory instead
-     * @param string $commandsDirectory
-     * @return YouConsoleKernel
-     */
-    public function setCommandsDirectory(string $commandsDirectory): self
-    {
-        return $this->addCommandsDirectory($commandsDirectory);
-    }
-
-
 }
