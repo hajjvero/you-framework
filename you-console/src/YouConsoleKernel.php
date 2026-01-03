@@ -39,6 +39,9 @@ class YouConsoleKernel
                 $argv = $_SERVER['argv'] ?? [];
             }
 
+            // Supprimer le nom du script (you)
+            array_shift($argv);
+
             // Auto-découverte des commandes
             $this->autoDiscoverCommands();
 
@@ -115,6 +118,6 @@ class YouConsoleKernel
     private function extractCommandName(array $argv): string
     {
         // Le premier argument est le nom du script, le second est la commande
-        return $argv[1] ?? '';
+        return $argv[0] ?? '';
     }
 }

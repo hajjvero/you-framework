@@ -4,6 +4,7 @@ namespace YouKernel\Bootstrap;
 
 use YouConfig\Config;
 use YouConsole\Helper\ListCommand;
+use YouConsole\Helper\ServeCommand;
 use YouConsole\YouConsoleKernel;
 use YouKernel\Component\Container\Container;
 use YouMake\Command\Generator\{ControllerMakeCommand, EntityMakeCommand, CommandMakeCommand, MigrationMakeCommand};
@@ -34,6 +35,7 @@ final class ConsoleBootstrapper
 
         $kernel->registerCommand(
             new ListCommand(),
+            new ServeCommand($container),
             new CommandMakeCommand($container),
             new ControllerMakeCommand($container),
             new EntityMakeCommand($container),
