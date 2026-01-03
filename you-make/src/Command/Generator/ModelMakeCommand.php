@@ -2,6 +2,8 @@
 
 namespace YouMake\Command\Generator;
 
+use YouConfig\Config;
+
 /**
  * Commande pour générer un modèle ORM.
  */
@@ -26,45 +28,51 @@ class ModelMakeCommand extends AbstractGeneratorCommand
     }
 
     /**
-     * @param string $name
+     * @param string $className
      * @return string
+     * @throws \ReflectionException
      */
-    protected function getDestinationPath(string $name): string
+    protected function getDestinationPath(string $className): string
     {
-        $name = str_replace('\\', '/', $name);
-        return getcwd() . '/src/Model/' . $name . '.php';
+        $config = $this->container->get(Config::class);
+        $projectDir = $this->container->get('project_dir');
+
+        $entitiesPath = $projectDir . '/' . ltrim($config->get('database.entities_path', 'src/Entity'), '/');
+        $className = str_replace('\\', '/', $className);
+
+        return  sprintf('%s/%s.php', $entitiesPath, $className);
     }
 
     /**
-     * @param string $name
+     * @param string $className
      * @return array<string, string>
      */
-    protected function getReplacements(string $name): array
+    protected function getReplacements(string $className): array
     {
-        $replacements = parent::getReplacements($name);
-        $replacements['{{ table }}'] = $this->getTableName($name);
+        $replacements = parent::getReplacements($className);
+        $replacements['{{ table }}'] = $this->getTableName($className);
 
         return $replacements;
     }
 
     /**
-     * @param string $name
+     * @param string $className
      * @return string
      */
-    protected function getTableName(string $name): string
+    protected function getTableName(string $className): string
     {
-        $class = $this->getClassName($name);
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $class)) . 's';
+        $class = $this->getClassName($className);
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $class));
     }
 
     /**
-     * @param string $name
+     * @param string $className
      * @return string
      */
-    protected function getDefaultNamespace(string $name): string
+    protected function getDefaultNamespace(string $className): string
     {
-        $namespace = 'App\\Model';
-        $parts = explode('\\', str_replace('/', '\\', $name));
+        $namespace = 'App\\Entity';
+        $parts = explode('\\', str_replace('/', '\\', $className));
         array_pop($parts);
 
         if (!empty($parts)) {
