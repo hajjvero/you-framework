@@ -86,7 +86,7 @@ if (!function_exists('discover_classes')) {
 
             $className = fqcn($file->getPathname());
 
-            if ($className) {
+            if ($className && class_exists($className)) {
                 $classes[] = $className;
             }
         }
