@@ -135,7 +135,7 @@ class MigrationMakeCommand extends AbstractGeneratorCommand
          */
         $introspector = match ($driver) {
             'pgsql' => new PostgreSqlIntrospector($connection),
-            default =>  new MySqlIntrospector($connection),
+            default =>  new MySqlIntrospector($connection, $config->get('database.migrations_table', 'migrations')),
         };
 
         $oldSchema = $introspector->introspect();
