@@ -41,17 +41,6 @@ class Container
     }
 
     /**
-     * Register an alias for a service.
-     *
-     * @param string $id
-     * @param string $alias
-     */
-    public function alias(string $id, string $alias): void
-    {
-        $this->definitions[$alias] = $id;
-    }
-
-    /**
      * Check if a service is defined or instantiated.
      */
     public function has(string $id): bool
@@ -69,27 +58,18 @@ class Container
             return $this->instances[$id];
         }
 
-        // 2. If a definition exists
+        // 2. Si une définition existe
         if (isset($this->definitions[$id])) {
             $concrete = $this->definitions[$id];
 
-            // If it's an alias (string pointing to another class/service)
-            if (is_string($concrete) && $concrete !== $id && ($this->has($concrete) || class_exists($concrete))) {
-                return $this->get($concrete);
-            }
-
-            // If it's a closure, execute it
+            // Si c'est une closure, on l'exécute pour obtenir l'instance
             if ($concrete instanceof Closure) {
-                $instance = $concrete($this);
-                $this->instances[$id] = $instance;
-                return $instance;
+                $this->instances[$id] = $concrete($this);
+            } else {
+                $this->instances[$id] = $concrete;
             }
 
-            // If it's already an object, cache and return
-            if (is_object($concrete)) {
-                $this->instances[$id] = $concrete;
-                return $concrete;
-            }
+            return $this->instances[$id];
         }
 
         // 3. Auto-wiring attempt if it's a valid class
