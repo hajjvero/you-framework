@@ -113,6 +113,44 @@ class User
 }
 </code></pre>
 
+        <h2>Relations entre Entités</h2>
+        <p>YouORM supporte les relations classiques via des attributs dédiés sur les propriétés.</p>
+
+        <h3>ManyToOne / OneToMany</h3>
+        <pre><code class="language-php">use YouOrm\Schema\Attribute\ManyToOne;
+use YouOrm\Schema\Attribute\OneToMany;
+use YouOrm\Schema\Attribute\JoinColumn;
+
+#[Table(name: 'posts')]
+class Post
+{
+    #[Column(type: ColumnType::INTEGER, primaryKey: true, autoIncrement: true)]
+    private ?int $id = null;
+
+    #[ManyToOne(targetEntity: User::class, inversedBy: 'posts')]
+    #[JoinColumn(name: 'user_id', onDelete: 'CASCADE')]
+    private User $user;
+}
+
+#[Table(name: 'users')]
+class User
+{
+    // ... id, email ...
+
+    #[OneToMany(targetEntity: Post::class, mappedBy: 'user')]
+    private array $posts = [];
+}
+</code></pre>
+
+        <h3>ManyToMany</h3>
+        <pre><code class="language-php">use YouOrm\Schema\Attribute\ManyToMany;
+use YouOrm\Schema\Attribute\JoinTable;
+
+#[ManyToMany(targetEntity: Tag::class, inversedBy: 'posts')]
+#[JoinTable(name: 'posts_tags')]
+private array $tags = [];
+</code></pre>
+
         <h2>Utilisation de l'EntityManager</h2>
 
         <h3>Persister et Sauvegarder</h3>
@@ -147,13 +185,65 @@ $users = $qb->select('*')
     ->getResults();
 </code></pre>
 
-        <h2>Migrations</h2>
-        <p>YouORM permet de gérer votre schéma via des commandes CLI (via YouConsole).</p>
-        <ul>
-            <li><code>php bin/console orm:migrate</code> : Exécute les migrations en attente.</li>
-            <li><code>php bin/console make:migration</code> : Génère une nouvelle migration basée sur les changements
-                d'entités.</li>
-        </ul>
+        <h2 id="migrations">Système de Migrations</h2>
+        <p>YouORM inclut un système complet pour gérer l'évolution de votre schéma de base de données. Il compare vos
+            entités PHP avec l'état actuel de votre base de données pour générer automatiquement les scripts SQL
+            nécessaires.</p>
+
+        <h3>Commandes CLI</h3>
+        <p>Les migrations sont gérées via les commandes <code>YouConsole</code>.</p>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Générer une migration</h5>
+                <p class="card-text">Compare les entités et la base de données, puis crée un nouveau fichier de
+                    migration.</p>
+                <pre><code class="language-bash">php bin/console make:migration</code></pre>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Exécuter les migrations</h5>
+                <p class="card-text">Applique toutes les migrations en attente.</p>
+                <pre><code class="language-bash">php bin/console orm:migrate</code></pre>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Annuler une migration (Rollback)</h5>
+                <p class="card-text">Recherche la dernière migration exécutée et appelle sa méthode <code>down()</code>.
+                </p>
+                <pre><code class="language-bash">php bin/console orm:migrate --down</code></pre>
+            </div>
+        </div>
+
+        <h3>Options Avancées</h3>
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Option / Argument</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>version</code></td>
+                    <td>Spécifie une version exacte à migrer ou annuler.</td>
+                </tr>
+                <tr>
+                    <td><code>--up</code> (ou <code>-u</code>)</td>
+                    <td>Force la direction vers le haut (appliqué par défaut).</td>
+                </tr>
+                <tr>
+                    <td><code>--down</code> (ou <code>-d</code>)</td>
+                    <td>Force la direction vers le bas (rollback).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>Pour plus de détails, consultez le guide <a href="../you-orm/MIGRATIONS.md">MIGRATIONS.md</a>.</p>
 
         <footer class="mt-5 mb-3 text-center text-muted">
             &copy; 2024 YouFramework
